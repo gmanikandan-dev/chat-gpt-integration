@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Conversation;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Throwable;
@@ -13,6 +13,7 @@ class ChatController extends Controller
     public function index()
     {
         $conversations = Conversation::oldest()->get();
+
         return view('chat', compact('conversations'));
     }
 
@@ -23,7 +24,7 @@ class ChatController extends Controller
         ]);
 
         // Save user message to database
-        $conversation = new Conversation();
+        $conversation = new Conversation;
         $conversation->message = $validated['message'];
         $conversation->sender = 'user';
         $conversation->save();
@@ -37,26 +38,28 @@ class ChatController extends Controller
                         ['role' => 'system', 'content' => 'You are a helpful assistant.'],
                         ['role' => 'user', 'content' => $validated['message']],
                     ],
-            ]);
-        
+                ]);
+
             if ($response->failed()) {
-                throw new \Exception('OpenAI API Error: ' . $response->body());
+                throw new \Exception('OpenAI API Error: '.$response->body());
             }
-        
+
             $reply = $response->json('choices.0.message.content');
         } catch (Throwable $throwable) {
             // Log the error and return a 500 response with a message
             Log::error($throwable->getMessage());
+
             return response()->json(['error' => 'Something went wrong. Please try again later.'], 500);
         }
 
         // Save ChatGPT's response to database
-        $conversation = new Conversation();
+        $conversation = new Conversation;
         $conversation->message = $reply;
         $conversation->sender = 'chatgpt';
         $conversation->save();
 
         $replyChunks = str_split($reply, 200); // Adjust chunk size as needed
+
         return response()->stream(function () use ($replyChunks) {
             foreach ($replyChunks as $chunk) {
                 echo $chunk;
