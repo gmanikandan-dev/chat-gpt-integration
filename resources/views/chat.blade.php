@@ -53,7 +53,6 @@
             </div>
         `;
         chatBox.scrollTop = chatBox.scrollHeight;
-
         messageInput.value = ''; // Clear input
 
         // Add typing indicator at the bottom of the chat box
@@ -102,6 +101,8 @@
                 }
             }
 
+            // Reload the page after receiving the response
+            location.reload();
             
         } catch (error) {
             console.error('Error:', error);
