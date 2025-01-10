@@ -12,7 +12,7 @@ class ChatController extends Controller
 {
     public function index()
     {
-        $conversations = Conversation::latest()->get();
+        $conversations = Conversation::oldest()->get();
         return view('chat', compact('conversations'));
     }
 
@@ -30,7 +30,7 @@ class ChatController extends Controller
 
         try {
             $response = Http::withToken(config('app.openai.api_key'))
-                ->timeout(30)
+                ->timeout(60)
                 ->post('https://api.openai.com/v1/chat/completions', [
                     'model' => 'gpt-3.5-turbo', // Use the GPT-3.5 model
                     'messages' => [
@@ -56,6 +56,14 @@ class ChatController extends Controller
         $conversation->sender = 'chatgpt';
         $conversation->save();
 
-        return response()->json(['reply' => $reply]);
+        $replyChunks = str_split($reply, 200); // Adjust chunk size as needed
+        return response()->stream(function () use ($replyChunks) {
+            foreach ($replyChunks as $chunk) {
+                echo $chunk;
+                ob_flush();
+                flush();
+                usleep(20000); // Adjust delay for typing speed
+            }
+        });
     }
 }
